@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staging 1.1 — 6703OS</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <a class="logo-link" href="../index.html" aria-label="6703OS home"><img class="logo" alt="6703OS" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='168' height='44' viewBox='0 0 168 44'><rect x='1' y='1' width='166' height='42' fill='%23000' stroke='%23d8e4dc' stroke-width='2'/><text x='84' y='29' font-family='Courier New,monospace' font-size='19' font-weight='bold' fill='%23d8e4dc' text-anchor='middle' letter-spacing='3'>6703OS</text></svg>"></a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+            <a class="nav-link" href="../index.html">Home</a><a class="nav-link" href="../project.html">Project</a><a class="nav-link" href="../packages.html">Packages</a><a class="nav-link" href="../wiki.html">Wiki</a><a class="nav-link" href="../security.html">Security</a><a class="nav-link" href="../download.html">Download</a>
+        </nav>
+    </header>
+    <main class="page-layout article-layout">
+        <p class="breadcrumbs"><a href="../index.html">Home</a> / Latest news</p>
+        <article class="article-content">
+            <p class="eyebrow">Latest news · <time datetime="2026-09-13">13/09/2026</time></p>
+            <h1>6703OS-staging-1.1 in staging testing</h1>
+            <p>The staging-1.1 build is currently used to test 6703OS as a server for the home business. It includes Linux kernel 6.16.1, and hosting validation is ongoing. The available software notes do not document CVE fixes for this build.</p>
+            <h2>Hosting stack</h2>
+            <ul>
+                <li><strong>Docker:</strong> runs the website and supporting services in containers.</li>
+                <li><strong>Nginx:</strong> serves as the web server and reverse proxy.</li>
+                <li><strong>Cloudflare:</strong> provide DNS and, when configured, edge caching and protective services.</li>
+                <li><strong>Prometheus:</strong> collect service and host metrics.</li>
+                <li><strong>Grafana:</strong> display monitoring dashboards.</li>
+            </ul>
+            <h2>Test hardware</h2>
+            <ul>
+                <li>Memory: 8 GB RAM.</li>
+                <li>Storage: 256 GB.</li>
+                <li>Processor: Intel Core i5, 10th generation.</li>
+            </ul>
+            <h2>Request-load testing</h2>
+            <p>In a dedicated staging environment, generate authorized synthetic requests against the test website. Increase request volume in measured stages while monitoring response times, error rates, CPU and memory use, disk activity, and service health in Prometheus and Grafana. Record the tested request rate and the point at which performance or reliability degrades.</p>
+            <h2>Controlled DDoS-resilience simulation</h2>
+            <p>Use only a private, isolated test network and systems explicitly designated for this exercise. Simulate a bounded burst of ordinary application requests from approved test clients, with a fixed rate and duration, an operator present, and a clear stop condition. Do not send traffic to unrelated or public third-party systems, use spoofed traffic, or use reflection or amplification techniques. If exercising Cloudflare protections, use an authorized staging hostname and coordinate the test with the account owner and provider requirements.</p>
+            <h2>Expected testing time</h2>
+            <p class="notice"><strong>Estimated testing period: 3 months.</strong> This is an estimate for hosting, load, and resilience testing, not a guaranteed release date.</p>
+            <h2>Results and status</h2>
+            <p><strong>Current result: Pending.</strong> No load-test or resilience results have been measured or confirmed yet. After testing, publish the environment, request profile, observed metrics, errors, and any limitations here.</p>
+            <p class="notice">The listed test hardware is 8 GB RAM, 256 GB storage, and a 10th-generation Intel Core i5 processor. These details are not minimum system requirements or evidence of demonstrated capacity.</p>
+            <nav class="related-links" aria-label="Related pages"><a href="cve-update.html">Kernel security status</a><a href="../download.html">Download information</a><a href="../index.html">Back to home</a></nav>
+        </article>
+    </main>
+    <footer class="site-footer"><p>© 6703OS — Copyright Nguyễn Quốc Bình.</p></footer>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script><script src="../js/main.js"></script>
+</body>
+</html>

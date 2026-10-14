@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staging 1.0 — 6703OS</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <a class="logo-link" href="../index.html" aria-label="6703OS home"><img class="logo" alt="6703OS" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='168' height='44' viewBox='0 0 168 44'><rect x='1' y='1' width='166' height='42' fill='%23000' stroke='%23d8e4dc' stroke-width='2'/><text x='84' y='29' font-family='Courier New,monospace' font-size='19' font-weight='bold' fill='%23d8e4dc' text-anchor='middle' letter-spacing='3'>6703OS</text></svg>"></a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+            <a class="nav-link" href="../index.html">Home</a><a class="nav-link" href="../project.html">Project</a><a class="nav-link" href="../packages.html">Packages</a><a class="nav-link" href="../wiki.html">Wiki</a><a class="nav-link" href="../security.html">Security</a><a class="nav-link" href="../download.html">Download</a>
+        </nav>
+    </header>
+    <main class="page-layout article-layout">
+        <p class="breadcrumbs"><a href="../index.html">Home</a> / Latest news</p>
+        <article class="article-content">
+            <p class="eyebrow">Latest news · <time datetime="2026-06-07">07/06/2026</time></p>
+            <h1>6703OS-staging-1.0 is pending</h1>
+            <p>The 6703OS-staging-1.0 release is pending. Printer compatibility testing covers two Canon printers.</p>
+            <h2>Printers under test</h2>
+            <div class="printer-grid">
+                <figure class="printer-card">
+                    <img class="printer-image" src="../images/CanonLBP6030WWifi.png" alt="Canon LBP 6030W laser printer">
+                    <figcaption><strong>Canon LBP 6030W</strong><br>Monochrome laser printer with Wi-Fi. Testing will check printer detection, connection, and sample document output.</figcaption>
+                </figure>
+                <figure class="printer-card">
+                    <img class="printer-image" src="../images/Canon_TS207.png" alt="Canon TS207 printer">
+                    <figcaption><strong>Canon TS207</strong><br>Inkjet printer. Testing will check printer detection, connection, and sample document output.</figcaption>
+                </figure>
+            </div>
+            <h2>Follow-up validation process</h2>
+            <p>Further validation should record the test build, printer connection method, driver configuration, and date for each result.</p>
+            <ol>
+                <li>Prepare a 6703OS test system and record the printer connection method and driver configuration.</li>
+                <li>Connect each printer and check whether 6703OS detects it and makes the appropriate driver available.</li>
+                <li>Send text and image test pages, then check that the jobs complete and the printed output is legible.</li>
+                <li>Repeat print jobs and connection checks after restarting the system; record errors and any required setup steps.</li>
+            </ol>
+            <h2>Reported printer test results</h2>
+            <p class="notice">The notes report the results below, but do not identify the tested build or when the tests were performed. Treat these as unverified reports, not confirmed staging-1.0 results.</p>
+            <div class="table-scroll">
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Printer</th>
+                            <th scope="col">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Canon TS207</td>
+                            <td>PASS</td>
+                        </tr>
+                        <tr>
+                            <td>Canon LBP 6030W</td>
+                            <td>FAILED — font issue</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="notice"><strong>Printer testing is still in progress on 6703OS-staging-1.1.</strong> The reported results above are not attributed to that build.</p>
+            <nav class="related-links" aria-label="Related pages"><a href="../download.html">Download information</a><a href="../wiki/installation.html">Installation guide</a><a href="../index.html">Back to home</a></nav>
+        </article>
+    </main>
+    <footer class="site-footer"><p>© 6703OS — Copyright Nguyễn Quốc Bình.</p></footer>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script><script src="../js/main.js"></script>
+</body>
+</html>

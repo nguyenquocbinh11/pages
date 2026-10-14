@@ -1,0 +1,219 @@
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          DOCKER HOST (Vietnam TZ)                           │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    DOCKER NETWORK (backend)                           │  │
+│  │                                                                       │  │
+│  │  ┌─────────────────────────┐        ┌─────────────────────────────┐  │  │
+│  │  │  CONTAINER: inventory   │        │  CONTAINER: sync            │  │  │
+│  │  │  .NET · Clean Arch      │        │  Python · FastAPI           │  │  │
+│  │  │  Hangfire · Serilog     │        │  Logging                    │  │  │
+│  │  │                         │        │                             │  │  │
+│  │  │  [21:55] tạo snapshot   │        │  POST /sync                 │  │  │
+│  │  │  [22:00] Hangfire ──────┼───────►│  GET sàn → compare → UPDATE │  │  │
+│  │  │                         │  HTTP  │                             │  │  │
+│  │  └────────────┬────────────┘        └──────────┬──────────────────┘  │  │
+│  │               │                                │                     │  │
+│  │               │ EF Core                        │ HTTPS               │  │
+│  │               ▼                                ▼                     │  │
+│  │  ┌─────────────────────────┐        ┌─────────────────────────────┐  │  │
+│  │  │  CONTAINER: postgres    │        │  Shopee API / TikTok API    │  │  │
+│  │  │  Inventory DB           │        │  (bên ngoài)                │  │  │
+│  │  │  - Products             │        └─────────────────────────────┘  │  │
+│  │  │  - Snapshots            │                                         │  │
+│  │  │    (version, ts, jsonb) │                                         │  │
+│  │  └────────────┬────────────┘                                         │  │
+│  │               │                                                      │  │
+│  └───────────────┼──────────────────────────────────────────────────────┘  │
+│                  │                                                         │
+│                  ▼                                                         │
+│  ┌───────────────────────────────────────┐                                 │
+│  │        DOCKER VOLUME                  │                                 │
+│  │        postgres_data                  │                                 │
+│  │        /var/lib/postgresql/data       │                                 │
+│  └───────────────┬───────────────────────┘                                 │
+│                  │                                                         │
+│                  │ pg_dump                                                 │
+│                  ▼                                                         │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │                    BACKUP PIPELINE                                    │ │
+│  │                                                                       │ │
+│  │  ┌──────────────────────┐       ┌──────────────────────────────────┐ │ │
+│  │  │ CONTAINER:           │       │  DOCKER VOLUME:                  │ │ │
+│  │  │ postgres-backup      │──────►│  postgres_backup                 │ │ │
+│  │  │ (cron + pg_dump)     │       │  /backups                        │ │ │
+│  │  │                      │       │  ├── full_2026-01-01.sql.gz      │ │ │
+│  │  │ [02:00] hàng ngày    │       │  ├── full_2026-01-02.sql.gz      │ │ │
+│  │  │ pg_dump → .sql.gz    │       │  ├── full_2026-01-03.sql.gz      │ │ │
+│  │  │ retention: 7 ngày    │       │  └── ...                         │ │ │
+│  │  └──────────┬───────────┘       └──────────────────────────────────┘ │ │
+│  │             │                                                         │ │
+│  │             │ rclone / rsync / scp                                    │ │
+│  │             ▼                                                         │ │
+│  │  ┌──────────────────────────────────────────────────────────────────┐ │ │
+│  │  │              OFF-SITE BACKUP                                     │ │ │
+│  │  │  - S3 / MinIO / NAS / VPS khác                                   │ │ │
+│  │  │  - Retention: 30 ngày                                            │ │ │
+│  │  │  - Mã hóa: GPG hoặc age                                          │ │ │
+│  │  └──────────────────────────────────────────────────────────────────┘ │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    DOCKER NETWORK (monitoring)                        │  │
+│  │                                                                       │  │
+│  │  ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐          │  │
+│  │  │ CONTAINER:   │   │ CONTAINER:   │   │ CONTAINER:       │          │  │
+│  │  │ prometheus   │──►│ grafana      │──►│ alertmanager     │          │  │
+│  │  │ (scrape)     │   │ (dashboard)  │   │ (notify)         │          │  │
+│  │  └──────────────┘   └──────────────┘   └────────┬─────────┘          │  │
+│  │                                                  │                    │  │
+│  │                                                  ▼                    │  │
+│  │                                       ┌──────────────────────┐       │  │
+│  │                                       │ Telegram/Slack/Email │       │  │
+│  │                                       └──────────────────────┘       │  │
+│  │                                                                       │  │
+│  │  Alert rules:                                                         │  │
+│  │  • up == 0                     (container down)                       │  │
+│  │  • job_missed_after_22h        (Hangfire không chạy)                  │  │
+│  │  • sync_errors_total > 0       (sync xong nhưng có lỗi)               │  │
+│  │  • backup_missed               (backup không chạy)                    │  │
+│  │  • backup_age > 26h            (backup cũ hơn 26h)                    │  │
+│  │  • backup_disk_usage > 80%     (volume backup gần đầy)                │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────┐                                 │
+│  │        DOCKER VOLUME                  │                                 │
+│  │        sync_logs                      │                                 │
+│  │        /app/logs                      │                                 │
+│  └───────────────────────────────────────┘                                 │
+│                                                                             │
+│  ┌───────────────────────────────────────┐                                 │
+│  │        DOCKER VOLUME                  │                                 │
+│  │        grafana_data / prom_data       │                                 │
+│  └───────────────────────────────────────┘                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       BACKUP FLOW                                           │
+│                                                                             │
+│  [02:00]  ┌──────────────────────────┐                                     │
+│  hàng ngày│  postgres-backup cron    │                                     │
+│           │  (container riêng)       │                                     │
+│           └────────────┬─────────────┘                                     │
+│                        │                                                    │
+│                        ▼                                                    │
+│           ┌──────────────────────────┐                                     │
+│           │  pg_dump -Fc inventory   │                                     │
+│           └────────────┬─────────────┘                                     │
+│                        │                                                    │
+│                        ▼                                                    │
+│           ┌──────────────────────────┐                                     │
+│           │  gzip → full_YYYY-MM-DD  │                                     │
+│           │  .sql.gz                 │                                     │
+│           └────────────┬─────────────┘                                     │
+│                        │                                                    │
+│                        ▼                                                    │
+│           ┌──────────────────────────┐                                     │
+│           │  Lưu vào volume          │                                     │
+│           │  postgres_backup         │                                     │
+│           │  retention: 7 ngày       │                                     │
+│           └────────────┬─────────────┘                                     │
+│                        │                                                    │
+│                        ▼                                                    │
+│           ┌──────────────────────────┐                                     │
+│           │  rclone sync → S3/NAS    │                                     │
+│           │  retention: 30 ngày      │                                     │
+│           │  mã hóa GPG/age          │                                     │
+│           └──────────────────────────┘                                     │
+│                                                                             │
+│  • Thành công → metric backup_last_success_timestamp                        │
+│  • Thất bại   → metric backup_failed_total++ → alert                        │
+│  • Test restore định kỳ 1 tháng/lần                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       BACKUP STRATEGY — 3 LỚP                               │
+│                                                                             │
+│  LỚP 1: DB Volume (realtime)                                                │
+│  ├── postgres_data/                                                         │
+│  ├── Docker tự quản lý                                                      │
+│  └── DB đang chạy                                                           │
+│                                                                             │
+│  LỚP 2: Local Backup (hàng ngày, 02:00)                                     │
+│  ├── pg_dump → .sql.gz → postgres_backup/                                   │
+│  ├── Retention: 7 ngày                                                      │
+│  ├── Cùng host                                                              │
+│  └── Restore nhanh (<1 phút)                                                │
+│                                                                             │
+│  LỚP 3: Off-site Backup (hàng ngày, sau lớp 2)                              │
+│  ├── rclone → S3 / MinIO / NAS / VPS khác                                   │
+│  ├── Retention: 30 ngày                                                     │
+│  ├── Mã hóa GPG/age                                                         │
+│  └── Chống mất host, chống ransomware                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       DOCKER COMPOSE                                        │
+│                                                                             │
+│  services:                                                                  │
+│    ├── inventory        (.NET)                                              │
+│    ├── sync             (Python)                                            │
+│    ├── postgres         (Inventory)                                         │
+│    ├── postgres-backup  (cron + pg_dump)                                    │
+│    ├── prometheus       (scrape)                                            │
+│    ├── grafana          (dashboard)                                         │
+│    └── alertmanager     (notify)                                            │
+│                                                                             │
+│  volumes:                                                                   │
+│    ├── postgres_data    → /var/lib/postgresql/data                          │
+│    ├── postgres_backup  → /backups                                          │
+│    ├── sync_logs        → /app/logs                                         │
+│    ├── prom_data        → /prometheus                                       │
+│    └── grafana_data     → /var/lib/grafana                                  │
+│                                                                             │
+│  networks:                                                                  │
+│    ├── backend         (inventory ↔ sync ↔ postgres ↔ backup)               │
+│    └── monitoring      (prometheus ↔ grafana ↔ alertmanager)                │
+│                                                                             │
+│  TZ: Asia/Ho_Chi_Minh                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       PROJECT STRUCTURE                                     │
+│                                                                             │
+│  project/                                                                   │
+│  ├── docker-compose.yml                                                     │
+│  ├── .env                                                                   │
+│  │                                                                          │
+│  ├── inventory/                                                             │
+│  │   ├── Dockerfile                                                         │
+│  │   └── src/...                                                            │
+│  │                                                                          │
+│  ├── sync/                                                                  │
+│  │   ├── Dockerfile                                                         │
+│  │   └── app/...                                                            │
+│  │                                                                          │
+│  ├── backup/                                                                │
+│  │   ├── Dockerfile                                                         │
+│  │   ├── backup.sh                                                          │
+│  │   └── crontab                                                            │
+│  │                                                                          │
+│  ├── monitoring/                                                            │
+│  │   ├── prometheus.yml                                                     │
+│  │   ├── alert-rules.yml                                                    │
+│  │   └── grafana/                                                           │
+│  │       └── dashboards/                                                    │
+│  │                                                                          │
+│  └── volumes/                                                               │
+│      ├── postgres_data/                                                     │
+│      ├── postgres_backup/                                                   │
+│      ├── sync_logs/                                                         │
+│      ├── prom_data/                                                         │
+│      └── grafana_data/                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+67030S:
+Inboud: Client --> Cloudflare Edge --> Tunnel --> Cloudflared service (OS) --> NGINX --> Server (Backend)
+Outbound: Server (Backend) --> NGINX --> Cloudflared service (OS) --> Tunnel --> Cloudflare Edge --> Client
+USING Hostinger --> Config in Cloudflare Tunnel

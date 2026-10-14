@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explore the 6703OS business inventory, marketplace synchronization, backup, and monitoring architecture.">
+    <title>Business — 6703OS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <a class="logo-link" href="index.html" aria-label="6703OS home"><img class="logo" alt="6703OS" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='168' height='44' viewBox='0 0 168 44'><rect x='1' y='1' width='166' height='42' fill='%23000' stroke='%23d8e4dc' stroke-width='2'/><text x='84' y='29' font-family='Courier New,monospace' font-size='19' font-weight='bold' fill='%23d8e4dc' text-anchor='middle' letter-spacing='3'>6703OS</text></svg>"></a>
+        <nav class="primary-nav" aria-label="Primary navigation">
+            <a class="nav-link" href="index.html">Home</a><a class="nav-link" href="project.html" aria-current="page">Business</a><a class="nav-link" href="packages.html">Packages</a><a class="nav-link" href="wiki.html">Wiki</a><a class="nav-link" href="security.html">Security</a><a class="nav-link" href="download.html">Download</a>
+        </nav>
+    </header>
+    <main class="page-layout article-layout">
+        <p class="breadcrumbs"><a href="index.html">Home</a> / Business</p>
+        <article class="article-content">
+            <p class="eyebrow">Business systems · Operations overview</p>
+            <h1>Business</h1>
+            <p>This page presents a home-based business with two areas: crafting, which includes manufacturing, inventory management, and selling handmade products; and computers, which includes selling computer products and providing computer-related services. Its business systems support inventory, online marketplace synchronization, data storage, backups, and monitoring.</p>
+            <p class="notice"><strong>Business status:</strong> The home business is active, and its systems are running. The Inventory system currently runs on AWS and is being migrated to 6703OS staging.</p>
+            <p>We are using <a href="news/staging-1.1.html">6703OS-staging-1.1</a> to test it as a server for the home business.</p>
+
+            <h2>Business workflow</h2>
+            <p>The inventory service stores products and scheduled snapshots. A nightly job calls the sync service, which reads marketplace data, compares it with inventory, and applies updates. The application services and PostgreSQL run on a private backend network; marketplace APIs remain external.</p>
+            <figure class="architecture-figure">
+                <pre class="mermaid">
+flowchart LR
+    subgraph backend["Docker backend network"]
+        Inventory["Inventory service<br/>.NET · Clean Architecture<br/>Hangfire · Serilog"]
+        Database[("PostgreSQL<br/>Products · Snapshots")]
+        Sync["Sync service<br/>Python · FastAPI<br/>Logging"]
+        Inventory -->|"EF Core"| Database
+        Inventory -->|"21:55 snapshot · 22:00 scheduled POST /sync"| Sync
+        Sync -->|"compare and update"| Database
+    end
+    Sync -->|"HTTPS · read and sync product data"| Marketplaces["Shopee API<br/>TikTok API"]
+    </pre>
+                <figcaption>Inventory synchronization flow. Schedule and service behavior are taken from the project notes.</figcaption>
+            </figure>
+
+            <h2>Deployment and traffic flow</h2>
+            <p>The deployment uses Hostinger to host the server and a Cloudflare Tunnel to connect public traffic to services running on the 6703OS host. Cloudflared receives tunnel traffic and passes requests to NGINX, which routes them to the backend. Responses return through the same components in reverse order.</p>
+            <figure class="architecture-figure">
+                <pre class="mermaid">
+flowchart LR
+    Client["Client"]
+    Edge["Cloudflare Edge"]
+    Tunnel["Cloudflare Tunnel"]
+    Cloudflared["cloudflared service<br/>on 6703OS host"]
+    NGINX["NGINX"]
+    Backend["Server backend"]
+    Hostinger["Hostinger<br/>hosting provider"]
+
+    Client -->|"Inbound request"| Edge
+    Edge --> Tunnel
+    Tunnel --> Cloudflared
+    Cloudflared --> NGINX
+    NGINX --> Backend
+    Backend -->|"Outbound response"| NGINX
+    NGINX --> Cloudflared
+    Cloudflared --> Tunnel
+    Tunnel --> Edge
+    Edge --> Client
+    Hostinger -. "hosts 6703OS" .-> Cloudflared
+    Edge -. "tunnel configured in Cloudflare" .-> Tunnel
+    </pre>
+                <figcaption>Hostinger deployment with Cloudflare Tunnel, cloudflared, NGINX, and the backend.</figcaption>
+            </figure>
+
+            <h2>Backups and recovery</h2>
+            <p>The notes describe three protection layers: the live database volume, daily local database dumps, and encrypted off-site copies. Local backups are retained for seven days; off-site copies are retained for 30 days. A periodic restore test is part of the operations process.</p>
+            <figure class="architecture-figure">
+                <pre class="mermaid">
+flowchart LR
+    Database[("PostgreSQL data<br/>Live Docker volume")]
+    Dump["Daily 02:00<br/>pg_dump · gzip"]
+    Local[("Local backup volume<br/>7-day retention")]
+    Offsite["Encrypted off-site copy<br/>S3 · MinIO · NAS · VPS<br/>30-day retention"]
+    Restore["Monthly restore test"]
+    Database --> Dump --> Local --> Offsite
+    Local -. "verify recovery" .-> Restore
+    Offsite -. "verify recovery" .-> Restore
+    Dump -->|"success timestamp / failure counter"| Metrics["Backup metrics"]
+    Metrics --> Alerts["Alert on failure"]
+    </pre>
+                <figcaption>Backup flow and retention periods for the business systems.</figcaption>
+            </figure>
+
+            <h2>Monitoring and operations</h2>
+            <ul>
+                <li><strong>Prometheus</strong> collects service and backup metrics; <strong>Grafana</strong> presents dashboards; <strong>Alertmanager</strong> sends notifications.</li>
+                <li>Alerts include a missed scheduled job, sync errors, and a missed backup.</li>
+                <li>Docker Compose defines the inventory, sync, PostgreSQL, backup, and monitoring services and their persistent volumes.</li>
+                <li>The configured timezone in the notes is <code>Asia/Ho_Chi_Minh</code>.</li>
+            </ul>
+            <nav class="related-links" aria-label="Related pages"><a href="news/staging-1.1.html">Staging 1.1 status</a><a href="news/staging-1.0.html">Staging 1.0 status</a><a href="security.html">Security information</a><a href="index.html">Back to home</a></nav>
+        </article>
+    </main>
+    <footer class="site-footer"><p>© 6703OS — Copyright Nguyễn Quốc Bình.</p></footer>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'strict' });
+    </script>
+</body>
+</html>
